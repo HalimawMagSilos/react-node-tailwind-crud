@@ -1,7 +1,7 @@
 // postcss.config.js
 export default {
   plugins: {
-    '@tailwindcss/postcss': {},// Tailwind CSS plugin
+    tailwindcss: {}, // Ito ang tamang paraan para i-load ang Tailwind CSS plugin
     autoprefixer: {}, // Autoprefixer plugin for adding vendor prefixes
   },
 };
