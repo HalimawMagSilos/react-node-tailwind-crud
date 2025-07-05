@@ -3,9 +3,14 @@ import { useState, useEffect } from 'react';
 import './index.css';
 
 // *** PAANO GUMAGANA ANG API_URL NA ITO: ***
-// 1. Kapag LOCAL DEVELOPMENT (npm run dev): Walang VITE_APP_API_URL na nakaset, kaya gagamitin ang 'http://localhost:5000/api/tasks'.
-// 2. Kapag VERCEL DEPLOYMENT: Kukunin ang VITE_APP_API_URL mula sa Vercel Environment Variables.
-//    Doon mo ilalagay ang PUBLIC RAILWAY URL ng iyong backend.
+// import.meta.env.VITE_APP_API_URL: Kukunin ang value nito mula sa Environment Variables.
+//    - Kapag LOCAL DEVELOPMENT (npm run dev): Walang VITE_APP_API_URL na nakaset, kaya gagamitin ang 'http://localhost:5000/api/tasks'.
+//    - Kapag VERCEL DEPLOYMENT: Kukunin ang VITE_APP_API_URL na IKAW MISMO ang magse-set sa Vercel Environment Variables.
+//
+// MAHALAGANG PAALALA TUNGKOL SA `react-node-tailwind-crud.railway.internal`:
+// Ang URL na ito ay para sa INTERNAL communication LAMANG kung ang iyong frontend at backend ay PAREHONG
+// naka-deploy sa PAREHONG Railway project. HINDI ITO GAGANA kung ang frontend mo ay nasa Vercel.
+// Sa Vercel, kailangan mo ang PUBLIC domain ng iyong Railway backend (e.g., https://your-backend-name.up.railway.app).
 const API_URL = import.meta.env.VITE_APP_API_URL || 'http://localhost:5000/api/tasks';
 
 function App() {
@@ -22,7 +27,6 @@ function App() {
     try {
       const response = await fetch(API_URL);
       if (!response.ok) {
-        // Log full error response for debugging
         const errorText = await response.text();
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
@@ -30,8 +34,8 @@ function App() {
       setTasks(data);
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      // Alert user or show a message on UI for frontend errors
-      // alert(`Failed to fetch tasks: ${error.message}. Make sure your backend is running.`);
+      // Maaari kang maglagay ng alert dito para sa user:
+      // alert(`Failed to fetch tasks: ${error.message}. Make sure your backend server is running and accessible.`);
     }
   };
 
