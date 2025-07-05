@@ -1,91 +1,67 @@
 // backend/server.js
 import express from 'express';
 import cors from 'cors';
-import fs from 'fs/promises';
+import fs from 'fs/promises'; // For reading/writing JSON file
 import path from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv'; // Import dotenv
-
-dotenv.config(); // Load environment variables from .env
-
-// Helper function for __dirname in ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// --- Configuration ---
-const PORT = process.env.PORT || 5000;
-
-// Use DB_PATH from .env or default to local path for development
-// For local: DB_PATH=./tasks.json in .env -> resolves to backend/tasks.json
-// For Railway: DB_PATH=/var/data/tasks.json in Railway env vars
-const DB_FILE = process.env.DB_PATH ? process.env.DB_PATH : path.join(__dirname, 'tasks.json');
-
-// Ensure the directory for DB_FILE exists if it's a specific path (like /var/data)
-// This is useful for deployment where /var/data might be an empty mount.
-async function ensureDbDirectory() {
-    const dbDir = path.dirname(DB_FILE);
-    try {
-        await fs.mkdir(dbDir, { recursive: true });
-        console.log(`Ensured directory exists: ${dbDir}`);
-    } catch (error) {
-        if (error.code !== 'EEXIST') { // Ignore if directory already exists
-            console.error(`Error ensuring directory ${dbDir}:`, error);
-            process.exit(1); // Exit if critical error
-        }
-    }
-}
-
 
 const app = express();
+const PORT = 5000;
 
-// --- Middleware ---
-app.use(cors());
-app.use(express.json());
+// Get __dirname equivalent in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DB_FILE = path.join(__dirname, 'tasks.json');
 
-// --- Utility Functions for Reading/Writing Tasks ---
+// Middleware
+app.use(cors()); // Enable CORS for all routes
+app.use(express.json()); // Enable parsing of JSON request bodies
+
+// Helper function to read tasks from the JSON file
 async function readTasks() {
     try {
-        const data = await fs.readFile(DB_FILE, 'utf8');
+        const data = await fs.readFile(DB_FILE, 'utf-8');
         return JSON.parse(data);
     } catch (error) {
         if (error.code === 'ENOENT') {
-            console.log(`Database file ${DB_FILE} not found. Starting with empty tasks.`);
+            // File does not exist, return an empty array
             return [];
         }
-        console.error('Error reading tasks file:', error);
-        throw error;
+        throw error; // Re-throw other errors
     }
 }
 
+// Helper function to write tasks to the JSON file
 async function writeTasks(tasks) {
-    try {
-        await fs.writeFile(DB_FILE, JSON.stringify(tasks, null, 2), 'utf8');
-    } catch (error) {
-        console.error('Error writing tasks file:', error);
-        throw error;
-    }
+    await fs.writeFile(DB_FILE, JSON.stringify(tasks, null, 2), 'utf-8');
 }
 
-// --- API Routes ---
+// Routes
 
-// GET /api/tasks
+// GET all tasks
 app.get('/api/tasks', async (req, res) => {
     try {
         const tasks = await readTasks();
         res.json(tasks);
     } catch (error) {
-        res.status(500).json({ message: 'Error retrieving tasks' });
+        console.error('Error fetching tasks:', error);
+        res.status(500).json({ message: 'Error fetching tasks' });
     }
 });
 
-// POST /api/tasks
+// POST a new task
 app.post('/api/tasks', async (req, res) => {
     try {
         const tasks = await readTasks();
+        const { title, description } = req.body;
+        if (!title) {
+            return res.status(400).json({ message: 'Title is required' });
+        }
         const newTask = {
-            id: Date.now().toString(),
-            text: req.body.text,
-            completed: false
+            id: Date.now().toString(), // Simple unique ID
+            title,
+            description: description || '',
+            completed: false,
         };
         tasks.push(newTask);
         await writeTasks(tasks);
@@ -96,19 +72,26 @@ app.post('/api/tasks', async (req, res) => {
     }
 });
 
-// PUT /api/tasks/:id
+// PUT (Update) a task
 app.put('/api/tasks/:id', async (req, res) => {
     try {
-        const taskId = req.params.id;
-        const updatedTaskData = req.body;
         let tasks = await readTasks();
-        const taskIndex = tasks.findIndex(task => task.id === taskId);
+        const { id } = req.params;
+        const { title, description, completed } = req.body;
+
+        const taskIndex = tasks.findIndex(task => task.id === id);
 
         if (taskIndex === -1) {
             return res.status(404).json({ message: 'Task not found' });
         }
 
-        tasks[taskIndex] = { ...tasks[taskIndex], ...updatedTaskData, id: taskId };
+        tasks[taskIndex] = {
+            ...tasks[taskIndex],
+            title: title !== undefined ? title : tasks[taskIndex].title,
+            description: description !== undefined ? description : tasks[taskIndex].description,
+            completed: completed !== undefined ? completed : tasks[taskIndex].completed,
+        };
+
         await writeTasks(tasks);
         res.json(tasks[taskIndex]);
     } catch (error) {
@@ -117,30 +100,28 @@ app.put('/api/tasks/:id', async (req, res) => {
     }
 });
 
-// DELETE /api/tasks/:id
+// DELETE a task
 app.delete('/api/tasks/:id', async (req, res) => {
     try {
-        const taskId = req.params.id;
         let tasks = await readTasks();
+        const { id } = req.params;
+
         const initialLength = tasks.length;
-        tasks = tasks.filter(task => task.id !== taskId);
+        tasks = tasks.filter(task => task.id !== id);
 
         if (tasks.length === initialLength) {
             return res.status(404).json({ message: 'Task not found' });
         }
 
         await writeTasks(tasks);
-        res.status(204).send();
+        res.status(204).send(); // No content for successful deletion
     } catch (error) {
         console.error('Error deleting task:', error);
         res.status(500).json({ message: 'Error deleting task' });
     }
 });
 
-// --- Start Server ---
-ensureDbDirectory().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Backend server running on port ${PORT}`);
-        console.log(`Tasks data path: ${DB_FILE}`);
-    });
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Backend server running on http://localhost:${PORT}`);
 });
