@@ -1,6 +1,6 @@
 // frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
-import './App.css'; // We'll create this soon
+// No more App.css import here, all styling is with Tailwind
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -8,7 +8,7 @@ function App() {
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [editingTask, setEditingTask] = useState(null); // Stores the task being edited
 
-  const API_URL = 'http://localhost:5000/api/tasks';
+  const API_URL = import.meta.env.VITE_APP_API_URL || 'http://localhost:5000/api/tasks';
 
   // --- Read (Fetch Tasks) ---
   useEffect(() => {
@@ -123,56 +123,88 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <h1>Task Manager</h1>
+    <div className="min-h-screen bg-gray-100 flex justify-center items-start py-10">
+      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-xl">
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Task Manager</h1>
 
-      <form onSubmit={editingTask ? handleUpdateTask : handleAddTask} className="task-form">
-        <input
-          type="text"
-          placeholder="Task Title"
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          required
-        />
-        <textarea
-          placeholder="Task Description (optional)"
-          value={newTaskDescription}
-          onChange={(e) => setNewTaskDescription(e.target.value)}
-        ></textarea>
-        <button type="submit">
-          {editingTask ? 'Update Task' : 'Add Task'}
-        </button>
-        {editingTask && (
-          <button type="button" onClick={() => { setEditingTask(null); setNewTaskTitle(''); setNewTaskDescription(''); }}>
-            Cancel Edit
+        <form onSubmit={editingTask ? handleUpdateTask : handleAddTask} className="flex flex-col gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Task Title"
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            className="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <textarea
+            placeholder="Task Description (optional)"
+            value={newTaskDescription}
+            onChange={(e) => setNewTaskDescription(e.target.value)}
+            className="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            rows="3"
+          ></textarea>
+          <button
+            type="submit"
+            className="py-3 px-6 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+          >
+            {editingTask ? 'Update Task' : 'Add Task'}
           </button>
-        )}
-      </form>
+          {editingTask && (
+            <button
+              type="button"
+              onClick={() => { setEditingTask(null); setNewTaskTitle(''); setNewTaskDescription(''); }}
+              className="py-3 px-6 bg-gray-500 text-white font-semibold rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors duration-200"
+            >
+              Cancel Edit
+            </button>
+          )}
+        </form>
 
-      <div className="task-list-container">
-        {tasks.length === 0 ? (
-          <p>No tasks yet. Add a new one!</p>
-        ) : (
-          <ul className="task-list">
-            {tasks.map((task) => (
-              <li key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
-                <div className="task-info">
-                  <span className="task-title">{task.title}</span>
-                  {task.description && <p className="task-description">{task.description}</p>}
-                </div>
-                <div className="task-actions">
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => handleToggleComplete(task.id)}
-                  />
-                  <button onClick={() => handleEditClick(task)}>Edit</button>
-                  <button onClick={() => handleDeleteTask(task.id)}>Delete</button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div>
+          {tasks.length === 0 ? (
+            <p className="text-center text-gray-500 text-lg">No tasks yet. Add a new one!</p>
+          ) : (
+            <ul className="space-y-4">
+              {tasks.map((task) => (
+                <li
+                  key={task.id}
+                  className={`flex justify-between items-center bg-gray-50 p-4 rounded-md shadow-sm border border-gray-200
+                    ${task.completed ? 'bg-green-50 border-green-200 line-through text-gray-500' : ''}`
+                  }
+                >
+                  <div className="flex flex-col flex-grow mr-4">
+                    <span className={`text-lg font-medium ${task.completed ? 'text-green-700' : 'text-gray-800'}`}>
+                        {task.title}
+                    </span>
+                    {task.description && (
+                        <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => handleToggleComplete(task.id)}
+                      className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                    />
+                    <button
+                      onClick={() => handleEditClick(task)}
+                      className="px-3 py-1 bg-yellow-500 text-white text-sm font-semibold rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-colors duration-200"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTask(task.id)}
+                      className="px-3 py-1 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
