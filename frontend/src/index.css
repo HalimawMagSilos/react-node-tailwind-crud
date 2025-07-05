@@ -1,0 +1,6 @@
+/* frontend/src/index.css */
+@tailwind base;     /* Tailwind's base styles (e.g., resets for consistent browser appearance) */
+@tailwind components; /* Tailwind's component classes (less common, but useful for some abstractions) */
+@tailwind utilities; /* Tailwind's utility classes (the core of Tailwind, e.g., `flex`, `bg-blue-500`) */
+
+/* You can add your own custom CSS here if absolutely necessary, but try to use Tailwind utilities first. */
