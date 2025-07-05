@@ -8,7 +8,7 @@ function App() {
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [editingTask, setEditingTask] = useState(null); // Stores the task being edited
 
-  const API_URL = import.meta.env.VITE_APP_API_URL || 'http://localhost:5000/api/tasks';
+  const API_URL = 'https://react-node-tailwind-crud.onrender.com/api/tasks'
 
   // --- Read (Fetch Tasks) ---
   useEffect(() => {
